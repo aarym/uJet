@@ -128,7 +128,9 @@ namespace Logikfabrik.Umbraco.Jet
         {
             var dataType = _dataTypeFinder.Find(model, dataTypes).SingleOrDefault();
 
-            dataType = dataType == null
+            var createNew = dataType == null;
+
+            dataType = createNew
                 ? CreateDataType(model)
                 : UpdateDataTypeDefinition(dataType, model);
 
@@ -137,8 +139,15 @@ namespace Logikfabrik.Umbraco.Jet
             // We get the data type once more to refresh it after saving it.
             dataType = _dataTypeService.GetDataTypeDefinitionByName(dataType.Name);
 
-            // Set the pre-values, if any.
-            SetDataTypePreValues(dataType, model);
+            if (createNew)
+            {
+                // Set the pre-values, if any.
+                SetDataTypePreValues(dataType, model);
+            }
+            else
+            {
+                // TODO: Update PreValues in DB if there are changes on the DataType
+            }
 
             // Set/update tracking.
             SetDataTypeId(model, dataType);
