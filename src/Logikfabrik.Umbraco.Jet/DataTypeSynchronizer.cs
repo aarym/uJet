@@ -146,7 +146,8 @@ namespace Logikfabrik.Umbraco.Jet
             }
             else
             {
-                // TODO: Update PreValues in DB if there are changes on the DataType
+                // Update prevalues - add new ones or remove deleted.
+                UpdateDataTypePreValues(dataType, model);
             }
 
             // Set/update tracking.
@@ -172,14 +173,56 @@ namespace Logikfabrik.Umbraco.Jet
         {
             if (!model.PreValues.Any())
             {
-                _dataTypeService.SavePreValues(dataType.Id, new Dictionary<string, PreValue>());
-
+                ClearDataTypePreValues(dataType);
                 return;
             }
 
             var preValues = model.PreValues.ToDictionary(preValue => preValue.Key, v => new PreValue(v.Value));
 
             _dataTypeService.SavePreValues(dataType.Id, preValues);
+        }
+
+        private void UpdateDataTypePreValues(IEntity dataType, DataType model)
+        {
+            if (!model.PreValues.Any())
+            {
+                ClearDataTypePreValues(dataType);
+                return;
+            }
+
+            var newPreValues = new Dictionary<string, PreValue>();
+
+            var existingPreValuesCollection = _dataTypeService.GetPreValuesCollectionByDataTypeId(dataType.Id);
+
+            if (existingPreValuesCollection.IsDictionaryBased)
+            {
+                var existingPreValues = existingPreValuesCollection.PreValuesAsDictionary;
+                foreach (var p in model.PreValues)
+                {
+                    if (!existingPreValues.ContainsKey(p.Key))
+                    {
+                        newPreValues.Add(p.Key, new PreValue(p.Value));
+                    }
+                    else
+                    {
+                        var newPreValue = existingPreValues[p.Key];
+
+                        if (newPreValue.Value != p.Value)
+                        {
+                            newPreValue.Value = p.Value;
+                        }
+
+                        newPreValues.Add(p.Key, newPreValue);
+                    }
+                }
+
+                _dataTypeService.SavePreValues(dataType.Id, newPreValues);
+            }
+        }
+
+        private void ClearDataTypePreValues(IEntity dataType)
+        {
+            _dataTypeService.SavePreValues(dataType.Id, new Dictionary<string, PreValue>());
         }
     }
 }
