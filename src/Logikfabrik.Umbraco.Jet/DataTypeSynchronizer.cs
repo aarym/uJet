@@ -171,9 +171,10 @@ namespace Logikfabrik.Umbraco.Jet
 
         private void SetDataTypePreValues(IEntity dataType, DataType model)
         {
-            if (!model.PreValues.Any())
+            // If new data type and no prevalues, just save the data type
+            if (model.PreValues == null || !model.PreValues.Any())
             {
-                ClearDataTypePreValues(dataType);
+                _dataTypeService.SavePreValues(dataType.Id, new Dictionary<string, PreValue>());
                 return;
             }
 
@@ -184,12 +185,13 @@ namespace Logikfabrik.Umbraco.Jet
 
         private void UpdateDataTypePreValues(IEntity dataType, DataType model)
         {
-            if (!model.PreValues.Any())
+            // If prevalues is null, do nothing
+            if (model.PreValues == null)
             {
-                ClearDataTypePreValues(dataType);
                 return;
             }
 
+            // If prevalues is an empty dictionary, existing will be cleared
             var newPreValues = new Dictionary<string, PreValue>();
 
             var existingPreValuesCollection = _dataTypeService.GetPreValuesCollectionByDataTypeId(dataType.Id);
@@ -218,11 +220,6 @@ namespace Logikfabrik.Umbraco.Jet
 
                 _dataTypeService.SavePreValues(dataType.Id, newPreValues);
             }
-        }
-
-        private void ClearDataTypePreValues(IEntity dataType)
-        {
-            _dataTypeService.SavePreValues(dataType.Id, new Dictionary<string, PreValue>());
         }
     }
 }
